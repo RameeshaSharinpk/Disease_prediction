@@ -1,10 +1,10 @@
-from  flask import Flask,render_template,url_for,request
+from  flask import Flask,render_template,url_for,request,redirect,session
+from flask_mysqldb import MySQL
+from pymongo import MongoClient
+import MySQLdb.cursors
+import re
 import numpy as np
 import pandas as pd
-# from scipy.stats import mode
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.ensemble import RandomForestClassifier
@@ -12,18 +12,47 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 
 app = Flask(__name__)
 
-@app.route('/')
+client = MongoClient('localhost', 27017)
+
+db = client.flask_db
+user = db.user
+
+# app.secret_key = 'diseasepass'
+
+# app.config['MYSQL_HOST'] = 'localhost'
+# app.config['MYSQL_USER'] = 'root'
+# app.config['MYSQL_PASSWORD'] = ''
+# app.config['MYSQL_DB'] = 'user-system'
+
+# mysql = MySQL(app)
+
+@app.route('/',methods=['GET','POST'])
 def login():
+    if request.method == 'POST':
+        email = request.form['email']
+        password = request.form['password']
+        user.insert_one({'email':email, 'password':password})
+        return redirect(url_for('predict'))
     return render_template('login.html')
 
 @app.route('/signup')
 def signup():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        password = request.form['password']
+        user.insert_one({'name':name, 'email':email, 'password':password})
+        return redirect(url_for('login'))
     return render_template('signup.html')
 
-@app.route('/predict', methods=['POST'])
-def predict():
-    # %matplotlib inline
 
+@app.route('/predict', methods=['GET','POST'])
+def predict():
+
+    if request.method == 'GET':
+        return render_template('predict.html')
+    # %matplotlib inline
+    input_symptoms = ",".join(request.form['symptoms'][:-2].split(", "))
     DATA_PATH = "Data/Training.csv"
     data = pd.read_csv(DATA_PATH).dropna(axis = 1)
     
@@ -96,7 +125,7 @@ def predict():
         return rf_prediction
     #  
     # Testing the function
-    result = predictDisease()
+    result = predictDisease(input_symptoms)
     return render_template('predict.html', prediction = result)
 
 if __name__ == '__main__':
