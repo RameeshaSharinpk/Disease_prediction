@@ -1,48 +1,54 @@
 from  flask import Flask,render_template,url_for,request,redirect,session
 from flask_mysqldb import MySQL
 from pymongo import MongoClient
-import MySQLdb.cursors
+import pickle
+# from flask.ext.pymongo import pyMongo
+import bcrypt
 import re
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split, cross_val_score
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import accuracy_score, confusion_matrix
+
 
 app = Flask(__name__)
 
 client = MongoClient('localhost', 27017)
 
-db = client.flask_db
-user = db.user
+db = client.DiseasePrediction
+loaded_model = pickle.load(open('finalized_model.sav', 'rb'))
+final_rf_modle = loaded_model["final_model"]
+symptoms = loaded_model["symptoms"] 
+data_dict = loaded_model["data_dict"]
 
-# app.secret_key = 'diseasepass'
-
-# app.config['MYSQL_HOST'] = 'localhost'
-# app.config['MYSQL_USER'] = 'root'
-# app.config['MYSQL_PASSWORD'] = ''
-# app.config['MYSQL_DB'] = 'user-system'
-
-# mysql = MySQL(app)
 
 @app.route('/',methods=['GET','POST'])
 def login():
     if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-        user.insert_one({'email':email, 'password':password})
-        return redirect(url_for('predict'))
+        users = db.user
+        login_user = users.find_one({'email': request.form['email']})
+
+        # if login_user:
+        #     if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password']).encode('utf-8') == login_user['password'].encode('utf-8')
+        # return redirect(url_for('predict'))
     return render_template('login.html')
 
-@app.route('/signup')
+@app.route('/signup', methods=['GET','POST'])
 def signup():
+    message = ""
     if request.method == 'POST':
-        name = request.form['name']
-        email = request.form['email']
-        password = request.form['password']
-        user.insert_one({'name':name, 'email':email, 'password':password})
-        return redirect(url_for('login'))
+        users = db.user
+        existing_user = users.find_one({'email': request.form['email']})
+        
+        if existing_user is None:
+            hashpass = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
+            users.insert_one({
+                'username': request.form['username'],
+                'email': request.form['email'],
+                'password': hashpass
+            })
+            session['email'] = request.form['email']
+            return "hello"
+        message = "The user already exists!"
+        return  render_template('signup.html', message = message)
     return render_template('signup.html')
 
 
@@ -53,63 +59,20 @@ def predict():
         return render_template('predict.html')
     # %matplotlib inline
     input_symptoms = ",".join(request.form['symptoms'][:-2].split(", "))
-    DATA_PATH = "Data/Training.csv"
-    data = pd.read_csv(DATA_PATH).dropna(axis = 1)
-    
-    # Checking whether the dataset is balanced or not
-    disease_counts = data["prognosis"].value_counts()
-    temp_df = pd.DataFrame({
-        "Disease": disease_counts.index,
-        "Counts": disease_counts.values
-    })
-    
-    encoder = LabelEncoder()
-    data["prognosis"] = encoder.fit_transform(data["prognosis"])
-
-    X = data.iloc[:,:-1]
-    y = data.iloc[:, -1]
-    X_train, X_test, y_train, y_test =train_test_split(
-    X, y, test_size = 0.2, random_state = 24)
-
-    
-    # Initializing Models
-    models = {
-        "Random Forest":RandomForestClassifier(random_state=18)
-    }
-    
-    
-    # Training and testing Random Forest Classifier
-    rf_model = RandomForestClassifier(random_state=18)
-    rf_model.fit(X_train, y_train)
-    preds = rf_model.predict(X_test)
-        
-    final_rf_model = RandomForestClassifier(random_state=18)
-    final_rf_model.fit(X, y)
-    
-    # Reading the test data
-    test_data = pd.read_csv("Data/Testing.csv").dropna(axis=1)
-    
-    test_X = test_data.iloc[:, :-1]
-    test_Y = encoder.transform(test_data.iloc[:, -1])
-    
-    symptoms = X.columns.values
+  
  
     # Creating a symptom index dictionary to encode the
     # input symptoms into numerical form
-    symptom_index = {}
-    for index, value in enumerate(symptoms):
-        symptom_index[value] = index
-    
-    data_dict = {
-        "symptom_index":symptom_index,
-        "predictions_classes":encoder.classes_
-    }
-    
+
     # Defining the Function
     # Input: string containing symptoms separated by commas
     # Output: Generated predictions by models
     def predictDisease(symptoms):
         symptoms = symptoms.split(",")
+        symptom_index = {}
+        for index, value in enumerate(symptoms):
+            symptom_index[value] = index
+        data_dict["symptom_index"] = symptom_index
         
         # creating input data for the models
         input_data = [0] * len(data_dict["symptom_index"])
@@ -119,7 +82,7 @@ def predict():
             input_data[index] = 1
    
         input_data = np.array(input_data).reshape(1,-1)
-        
+        print(data_dict)
         # generating individual outputs
         rf_prediction = data_dict["predictions_classes"][final_rf_model.predict(input_data)[0]]
         return rf_prediction
@@ -129,4 +92,5 @@ def predict():
     return render_template('predict.html', prediction = result)
 
 if __name__ == '__main__':
+    app.secret_key = 'mysecret'
     app.run(host="127.0.0.1", port=8000, debug=True)
