@@ -1,7 +1,8 @@
-from  flask import Flask,render_template,url_for,request,redirect,session
+from flask import Flask, render_template, url_for, request, redirect, session
 from flask_mysqldb import MySQL
 from pymongo import MongoClient
 import pickle
+
 # from flask.ext.pymongo import pyMongo
 import bcrypt
 import re
@@ -11,86 +12,89 @@ import pandas as pd
 
 app = Flask(__name__)
 
-client = MongoClient('localhost', 27017)
+client = MongoClient("localhost", 27017)
 
 db = client.DiseasePrediction
-loaded_model = pickle.load(open('finalized_model.sav', 'rb'))
-final_rf_modle = loaded_model["final_model"]
-symptoms = loaded_model["symptoms"] 
+loaded_model = pickle.load(open("finalized_model.sav", "rb"))
+final_rf_model = loaded_model["final_model"]
+symptoms = loaded_model["symptoms"]
 data_dict = loaded_model["data_dict"]
 
 
-@app.route('/',methods=['GET','POST'])
+@app.route("/", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
+    if request.method == "POST":
         users = db.user
-        login_user = users.find_one({'email': request.form['email']})
+        login_user = users.find_one({"email": request.form["email"]})
 
         # if login_user:
         #     if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password']).encode('utf-8') == login_user['password'].encode('utf-8')
         # return redirect(url_for('predict'))
-    return render_template('login.html')
+    return render_template("login.html")
 
-@app.route('/signup', methods=['GET','POST'])
+
+@app.route("/signup", methods=["GET", "POST"])
 def signup():
     message = ""
-    if request.method == 'POST':
+    if request.method == "POST":
         users = db.user
-        existing_user = users.find_one({'email': request.form['email']})
-        
+        existing_user = users.find_one({"email": request.form["email"]})
+
         if existing_user is None:
-            hashpass = bcrypt.hashpw(request.form['password'].encode('utf-8'), bcrypt.gensalt())
-            users.insert_one({
-                'username': request.form['username'],
-                'email': request.form['email'],
-                'password': hashpass
-            })
-            session['email'] = request.form['email']
+            hashpass = bcrypt.hashpw(
+                request.form["password"].encode("utf-8"), bcrypt.gensalt()
+            )
+            users.insert_one(
+                {
+                    "username": request.form["username"],
+                    "email": request.form["email"],
+                    "password": hashpass,
+                }
+            )
+            session["email"] = request.form["email"]
             return "hello"
         message = "The user already exists!"
-        return  render_template('signup.html', message = message)
-    return render_template('signup.html')
+        return render_template("signup.html", message=message)
+    return render_template("signup.html")
 
 
-@app.route('/predict', methods=['GET','POST'])
+@app.route("/predict", methods=["GET", "POST"])
 def predict():
-
-    if request.method == 'GET':
-        return render_template('predict.html')
+    if request.method == "GET":
+        return render_template("predict.html")
     # %matplotlib inline
-    input_symptoms = ",".join(request.form['symptoms'][:-2].split(", "))
-  
- 
+    input_symptoms = ",".join(request.form["symptoms"][:-2].split(", "))
+
     # Creating a symptom index dictionary to encode the
     # input symptoms into numerical form
 
     # Defining the Function
     # Input: string containing symptoms separated by commas
     # Output: Generated predictions by models
+
     def predictDisease(symptoms):
         symptoms = symptoms.split(",")
-        symptom_index = {}
-        for index, value in enumerate(symptoms):
-            symptom_index[value] = index
-        data_dict["symptom_index"] = symptom_index
-        
+
         # creating input data for the models
         input_data = [0] * len(data_dict["symptom_index"])
         for symptom in symptoms:
             symptom_transformed = "_".join([i.lower() for i in symptom.split(" ")])
             index = data_dict["symptom_index"][symptom_transformed]
             input_data[index] = 1
-   
-        input_data = np.array(input_data).reshape(1,-1)
-        print(data_dict)
+
+        input_data = np.array(input_data).reshape(1, -1)
         # generating individual outputs
-        rf_prediction = data_dict["predictions_classes"][final_rf_model.predict(input_data)[0]]
+        rf_prediction = data_dict["predictions_classes"][
+            final_rf_model.predict(input_data)[0]
+        ]
         return rf_prediction
-    #  
+
+    #
     # Testing the function
     result = predictDisease(input_symptoms)
-    return render_template('predict.html', prediction = result)
+    return render_template("predict.html", prediction=result)
 
-if __name__ == '__main__':
-    app.secret_key = 'mysecret'
+
+if __name__ == "__main__":
+    app.secret_key = "mysecret"
     app.run(host="127.0.0.1", port=8000, debug=True)
