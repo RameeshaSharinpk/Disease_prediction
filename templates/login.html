@@ -4,7 +4,7 @@
 <div class="container-signup">
   <div class="navbar-div">
     <div class="navbar-div">
-      <nav class="navbar navbar-expand-lg">
+      <nav class="navbar navbar-expand-lg bg-glass">
         <a class="navbar-brand" href="#" style="color:rgb(255, 255, 255);">Disease Prediction</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
           aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -32,7 +32,7 @@
             <div class="card bg-glass" style="border-radius: 15px;">
               <div class="card-body px-4 py-5 px-md-5">
                 <form method="post">
-
+                  <p style="color: red;">{{message}}</p>
                   <div class="form-outline mb-4" style="font-family: Arial, Helvetica, sans-serif;">
                     <h1>LOGIN</h1>
                   </div>
@@ -40,13 +40,13 @@
                   <!-- Email input -->
                   <div class="form-outline mb-4 text-left ">
                     <label class="form-label" for="form3Example3">Email address</label>
-                    <input type="email" id="form3Example3" class="form-control" />
+                    <input type="email" id="form3Example3" class="form-control" name="email"/>
                   </div>
 
                   <!-- Password input -->
                   <div class="form-outline mb-5 text-left">
                     <label class="form-label" for="form3Example4">Password</label>
-                    <input type="password" id="form3Example4" class="form-control" />
+                    <input type="password" id="form3Example4" class="form-control" name="password" />
                   </div>
 
                   <!-- Submit button -->

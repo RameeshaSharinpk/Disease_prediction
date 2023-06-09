@@ -20,16 +20,24 @@ final_rf_model = loaded_model["final_model"]
 symptoms = loaded_model["symptoms"]
 data_dict = loaded_model["data_dict"]
 
+@app.route("/")
+def home():
+    return render_template('home.html')
 
-@app.route("/", methods=["GET", "POST"])
+
+@app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
+        message = ""
         users = db.user
         login_user = users.find_one({"email": request.form["email"]})
 
-        # if login_user:
-        #     if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password']).encode('utf-8') == login_user['password'].encode('utf-8')
-        # return redirect(url_for('predict'))
+        if login_user:
+            if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password']) == login_user['password']:
+                session['email'] = request.form['email']
+                return redirect(url_for('home'))
+        message = "Invalid email/password combination"
+        return render_template("login.html", message = message)
     return render_template("login.html")
 
 
@@ -46,7 +54,7 @@ def signup():
             )
             users.insert_one(
                 {
-                    "username": request.form["username"],
+                    "name": request.form["name"],
                     "email": request.form["email"],
                     "password": hashpass,
                 }

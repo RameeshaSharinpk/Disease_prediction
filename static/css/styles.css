@@ -64,3 +64,15 @@ body {
     background-repeat: no-repeat;
     background-size: cover;
 }
+
+.history{
+    height: 80%;
+    width: 70%;
+    display: inline-block;
+    margin-top: 40px;
+    border-radius: 15px;
+}
+
+#history-page{
+    text-align: center;
+}
