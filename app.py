@@ -1,9 +1,9 @@
 from flask import Flask, render_template, url_for, request, redirect, session
 from flask_mysqldb import MySQL
 from pymongo import MongoClient
-import pickle
+from flask_restful import Resource, Api
 
-# from flask.ext.pymongo import pyMongo
+import pickle
 import bcrypt
 import re
 import numpy as np
@@ -20,12 +20,9 @@ final_rf_model = loaded_model["final_model"]
 symptoms = loaded_model["symptoms"]
 data_dict = loaded_model["data_dict"]
 
-@app.route("/")
-def home():
-    return render_template('home.html')
+# session['mail'] = ""
 
-
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
         message = ""
@@ -35,7 +32,9 @@ def login():
         if login_user:
             if bcrypt.hashpw(request.form['password'].encode('utf-8'), login_user['password']) == login_user['password']:
                 session['email'] = request.form['email']
-                return redirect(url_for('home'))
+                log_name = login_user['name'].capitalize()
+                session['mail'] = login_user['email']
+                return render_template('home.html', log_name = log_name)
         message = "Invalid email/password combination"
         return render_template("login.html", message = message)
     return render_template("login.html")
@@ -57,13 +56,18 @@ def signup():
                     "name": request.form["name"],
                     "email": request.form["email"],
                     "password": hashpass,
+                    "history":[]
                 }
             )
             session["email"] = request.form["email"]
-            return "hello"
+            log_name = request.form['name'].capitalize()
+            mail = request.form['email']
+            return render_template('/home', log_name = log_name)
         message = "The user already exists!"
         return render_template("signup.html", message=message)
     return render_template("signup.html")
+
+
 
 
 @app.route("/predict", methods=["GET", "POST"])
@@ -72,6 +76,15 @@ def predict():
         return render_template("predict.html")
     # %matplotlib inline
     input_symptoms = ",".join(request.form["symptoms"][:-2].split(", "))
+    # print(request.form["symptoms"])
+    # sympt = []
+    # symptom1 = request.form["symptom1"]
+    # symptom2 = request.form["symptom2"]
+    # symptom3 = request.form["symptom3"]
+    # symptom4 = request.form["symptom4"]
+    # symptom5 = request.form["symptom5"]
+    # symptom6 = request.form["symptom6"]
+    # input_symptoms = symptom1+","+symptom2+","+symptom3+","+symptom4+","+symptom5+","+symptom6
 
     # Creating a symptom index dictionary to encode the
     # input symptoms into numerical form
@@ -81,6 +94,7 @@ def predict():
     # Output: Generated predictions by models
 
     def predictDisease(symptoms):
+        
         symptoms = symptoms.split(",")
 
         # creating input data for the models
@@ -96,11 +110,26 @@ def predict():
             final_rf_model.predict(input_data)[0]
         ]
         return rf_prediction
-
+    # input_disease = [symptom1,symptom2,symptom3,symptom4,symptom5,symptom6]
+    # print(input_symptoms)
     #
     # Testing the function
     result = predictDisease(input_symptoms)
+    # mail = session.get('mail', None)
+    print(session['mail'])
+    users = db.user
+    
+    users.find_one_and_update({"email": session['mail']},{'$set':{
+        "history": {
+            "symptoms": input_symptoms,
+            "disease": result
+        }}
+    },upsert = True)
     return render_template("predict.html", prediction=result)
+
+@app.route("/home")
+def home():
+    return render_template('home.html')
 
 
 if __name__ == "__main__":
