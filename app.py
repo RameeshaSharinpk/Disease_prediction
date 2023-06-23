@@ -2,6 +2,7 @@ from flask import Flask, render_template, url_for, request, redirect, session
 from flask_mysqldb import MySQL
 from pymongo import MongoClient
 from flask_restful import Resource, Api
+from datetime import date, datetime
 
 import pickle
 import bcrypt
@@ -34,7 +35,7 @@ def login():
                 session['email'] = request.form['email']
                 log_name = login_user['name'].capitalize()
                 session['mail'] = login_user['email']
-                return render_template('home.html', log_name = log_name)
+                return render_template('predict.html', log_name = log_name)
         message = "Invalid email/password combination"
         return render_template("login.html", message = message)
     return render_template("login.html")
@@ -56,13 +57,12 @@ def signup():
                     "name": request.form["name"],
                     "email": request.form["email"],
                     "password": hashpass,
-                    "history":[]
                 }
             )
             session["email"] = request.form["email"]
             log_name = request.form['name'].capitalize()
-            mail = request.form['email']
-            return render_template('/home', log_name = log_name)
+            session['mail'] = request.form['email']
+            return render_template('/login', log_name = log_name)
         message = "The user already exists!"
         return render_template("signup.html", message=message)
     return render_template("signup.html")
@@ -75,26 +75,11 @@ def predict():
     if request.method == "GET":
         return render_template("predict.html")
     # %matplotlib inline
-    input_symptoms = ",".join(request.form["symptoms"][:-2].split(", "))
-    # print(request.form["symptoms"])
-    # sympt = []
-    # symptom1 = request.form["symptom1"]
-    # symptom2 = request.form["symptom2"]
-    # symptom3 = request.form["symptom3"]
-    # symptom4 = request.form["symptom4"]
-    # symptom5 = request.form["symptom5"]
-    # symptom6 = request.form["symptom6"]
-    # input_symptoms = symptom1+","+symptom2+","+symptom3+","+symptom4+","+symptom5+","+symptom6
-
-    # Creating a symptom index dictionary to encode the
-    # input symptoms into numerical form
-
-    # Defining the Function
-    # Input: string containing symptoms separated by commas
-    # Output: Generated predictions by models
+    session['input_symptoms'] = ",".join(request.form["symptoms"][:-2].split(", "))
+    
 
     def predictDisease(symptoms):
-        
+        # symptoms = [symptom1,symptom2,symptom3,symptom4,symptom5,symptom6]
         symptoms = symptoms.split(",")
 
         # creating input data for the models
@@ -114,23 +99,43 @@ def predict():
     # print(input_symptoms)
     #
     # Testing the function
-    result = predictDisease(input_symptoms)
+    session['result'] = predictDisease(session['input_symptoms'])
     # mail = session.get('mail', None)
     print(session['mail'])
     users = db.user
+    found_user = users.find_one({'email': session['mail']})
+    # sympt = []
+    # diseas = []
+
+    if found_user:
+        current_date = date.today().strftime('%m/%d/%Y')
+        symptoms = found_user.get('symptoms', [])
+        symptoms.append(session['input_symptoms'])
+        diseases = found_user.get('disease', [])
+        diseases.append(session['result'])
+        dates = found_user.get('dates',[])
+        dates.append(current_date)
+        users.update_one(
+            {'email': session['email']},
+            {'$set': {'symptoms': symptoms, 'disease': diseases, 'dates':dates}}
+        )
+
+    session['result'] =session['result']
     
-    users.find_one_and_update({"email": session['mail']},{'$set':{
-        "history": {
-            "symptoms": input_symptoms,
-            "disease": result
-        }}
-    },upsert = True)
-    return render_template("predict.html", prediction=result)
+    return render_template("predict.html", prediction=session['result'])
 
 @app.route("/home")
 def home():
-    return render_template('home.html')
+    users = db.user
+    found_user = users.find_one({'email': session['email']})
 
+    if found_user:
+        symptoms = found_user.get('symptoms', [])
+        diseases = found_user.get('disease', [])
+        dates = found_user.get('dates',[])
+        
+
+    return render_template('home.html', symptoms=symptoms, diseases=diseases, date=dates)
 
 if __name__ == "__main__":
     app.secret_key = "mysecret"

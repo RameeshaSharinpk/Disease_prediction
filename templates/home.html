@@ -42,12 +42,12 @@
             <th>Disease</th>
             <th>Date</th>
           </tr>
-          {%for i in range(0, 1)%}
+          {%for i in range(symptoms|length)%}
             <tr>
-              <td></td>
-              <td>Maria Anders</td>
-              <td>Germany</td>
-              <td>12/58/2093</td>
+              <td>{{i+1}}</td>
+              <td>{{symptoms[i]}}</td>
+              <td>{{diseases[i]}}</td>
+              <td>{{date[i]}}</td>
             </tr>
           {%endfor%}
         </table>
