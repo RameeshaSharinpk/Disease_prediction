@@ -18,13 +18,13 @@
                   class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item active">
-              <a class="nav-link" href="/home" style="color:rgb(251, 251, 252);">Home <span
+              <a class="nav-link" href="/history" style="color:rgb(251, 251, 252);">History <span
                   class="sr-only">(current)</span></a>
             </li>
             <li class="nav-item active">
               <a class="nav-link" href="/home" style="color:rgb(251, 251, 252);"><svg class="icon" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round"></path>
-              </svg>{{log_name}} <span
+              </svg><span
                   class="sr-only">(current)</span></a>
             </li>
           </ul>
@@ -32,12 +32,12 @@
       </nav>
     </div>
   </div>
-  <div class="signup-div">
+  <div class="prediction signup-div">
     <section class="background-radial-gradient overflow-hidden w-100 d-flex align-items-center" style="height: 100vh;">
 
 
       <form action="/predict" method="post" class="my-auto w-100">
-        <div class="container px-4 py-5 px-md-5 text-center text-lg-start align-items-center my-auto container-fluid">
+        <div class="container px-4 py-5 px-md-5 text-center text-lg-start align-items-center my-auto container-fluid d-flex justify-content-center">
           <div class="row gx-lg-5 align-items-center mb-5">
 
             <div class="mb-5 mb-lg-0 position-relative">
@@ -52,7 +52,7 @@
                     <div class="col-md-12 mb-4">
                       <label class="form-label" for="form3Example1">Input your symptoms</label>
                       <div class="form-outline text-dark">
-                        <input class="form-control" list="symptoms" name="symptoms" placeholder="Choose symptoms" class="awesomplete"
+                        <input class="form-control input-lg" style="width: 100%;" list="symptoms" name="symptoms" placeholder="Choose symptoms" class="awesomplete"
                           data-minchars="0" required data-autofirst data-multiple />
                         <datalist id="symptoms">
                           <option value="Itching" />

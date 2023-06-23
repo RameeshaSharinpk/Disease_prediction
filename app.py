@@ -124,8 +124,8 @@ def predict():
     
     return render_template("predict.html", prediction=session['result'])
 
-@app.route("/home")
-def home():
+@app.route("/history")
+def history():
     users = db.user
     found_user = users.find_one({'email': session['email']})
 
@@ -135,7 +135,7 @@ def home():
         dates = found_user.get('dates',[])
         
 
-    return render_template('home.html', symptoms=symptoms, diseases=diseases, date=dates)
+    return render_template('history.html', symptoms=symptoms, diseases=diseases, date=dates)
 
 if __name__ == "__main__":
     app.secret_key = "mysecret"
