@@ -5,6 +5,7 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 import pickle
 import pandas as pd
 
+
 #  Checking whether the dataset is balanced or not
 
 DATA_PATH = "Data/Training.csv"
@@ -47,6 +48,7 @@ model = {
     "symptoms": X.columns.values,
     "data_dict": data_dict,
 }
+
 
 filename = "finalized_model.sav"
 pickle.dump(model, open(filename, "wb"))

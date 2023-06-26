@@ -3,6 +3,7 @@ from flask_mysqldb import MySQL
 from pymongo import MongoClient
 from flask_restful import Resource, Api
 from datetime import date, datetime
+import time
 
 import pickle
 import bcrypt
@@ -62,7 +63,7 @@ def signup():
             session["email"] = request.form["email"]
             log_name = request.form['name'].capitalize()
             session['mail'] = request.form['email']
-            return render_template('/login', log_name = log_name)
+            return render_template('/predict', log_name = log_name)
         message = "The user already exists!"
         return render_template("signup.html", message=message)
     return render_template("signup.html")
@@ -76,10 +77,11 @@ def predict():
         return render_template("predict.html")
     # %matplotlib inline
     session['input_symptoms'] = ",".join(request.form["symptoms"][:-2].split(", "))
-    
+    start_time = time.time()
 
     def predictDisease(symptoms):
         # symptoms = [symptom1,symptom2,symptom3,symptom4,symptom5,symptom6]
+        
         symptoms = symptoms.split(",")
 
         # creating input data for the models
@@ -121,6 +123,9 @@ def predict():
         )
 
     session['result'] =session['result']
+    end_time = time.time()
+    training_time = end_time - start_time
+    print("Training time: {:.2f} seconds".format(training_time))
     
     return render_template("predict.html", prediction=session['result'])
 
