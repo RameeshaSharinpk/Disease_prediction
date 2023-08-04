@@ -63,7 +63,7 @@ def signup():
             session["email"] = request.form["email"]
             log_name = request.form['name'].capitalize()
             session['mail'] = request.form['email']
-            return render_template('/predict', log_name = log_name)
+            return render_template('predict.html', log_name = log_name)
         message = "The user already exists!"
         return render_template("signup.html", message=message)
     return render_template("signup.html")
